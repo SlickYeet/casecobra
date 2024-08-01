@@ -1,0 +1,158 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider     = "mysql"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
+}
+
+enum Role {
+  user
+  admin
+}
+
+model User {
+  id String @id
+
+  username String @unique()
+  email    String @unique()
+  password String
+
+  role Role @default(user)
+
+  sessions Session[]
+  Order    Order[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Session {
+  id String @id
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  expiresAt DateTime @db.Timestamp(0)
+
+  @@index([userId])
+}
+
+enum OrderStatus {
+  fulfilled
+  shipped
+  awaiting_shipment
+}
+
+enum CaseColor {
+  black
+  green
+  pink
+  blue
+  rose
+}
+
+enum PhoneModel {
+  iphonex
+  iphone11
+  iphone12
+  iphone13
+  iphone14
+  iphone15
+}
+
+enum CaseMaterial {
+  silicone
+  polycarbonate
+}
+
+enum CaseFinish {
+  smooth
+  textured
+}
+
+model Configuration {
+  id String @id @default(cuid())
+
+  width  Int
+  height Int
+
+  imageUrl        String
+  croppedImageUrl String?
+
+  color    CaseColor?
+  model    PhoneModel?
+  material CaseMaterial?
+  finish   CaseFinish?
+
+  Order Order[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Order {
+  id String @id @default(cuid())
+
+  configId      String
+  configuration Configuration @relation(fields: [configId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  amount Float
+  isPaid Boolean     @default(false)
+  status OrderStatus @default(awaiting_shipment)
+
+  shippingAddressId String?
+  shippingAddress   ShippingAddress? @relation(fields: [shippingAddressId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  billingAddressId String?
+  billingAddress   BillingAddress? @relation(fields: [billingAddressId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([configId])
+  @@index([userId])
+  @@index([shippingAddressId])
+  @@index([billingAddressId])
+}
+
+model ShippingAddress {
+  id String @id @default(cuid())
+
+  name        String
+  street      String
+  city        String
+  postalCode  String
+  country     String
+  state       String?
+  phoneNumber String?
+
+  orders Order[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model BillingAddress {
+  id String @id @default(cuid())
+
+  name        String
+  street      String
+  city        String
+  postalCode  String
+  country     String
+  state       String?
+  phoneNumber String?
+
+  orders Order[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
